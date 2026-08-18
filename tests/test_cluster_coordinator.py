@@ -54,6 +54,12 @@ guest_keys.make_guest_key = lambda node, vmid: f"{node}:{vmid}"
 guest_keys.matches_selected_guest = lambda *_args: True
 sys.modules[f"{PACKAGE}.logic.guest_keys"] = guest_keys
 
+node_metrics = types.ModuleType(f"{PACKAGE}.logic.node_metrics")
+node_metrics.merge_node_status_with_cluster_resource = (
+    lambda node_status, _resources, _node: node_status
+)
+sys.modules[f"{PACKAGE}.logic.node_metrics"] = node_metrics
+
 MODULE_PATH = Path(__file__).parents[1] / "custom_components/proxmox_sensors/coordinator.py"
 SPEC = importlib.util.spec_from_file_location(f"{PACKAGE}.coordinator", MODULE_PATH)
 coordinator_module = importlib.util.module_from_spec(SPEC)

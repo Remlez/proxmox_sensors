@@ -8,6 +8,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from .const import CONF_NODE, CONF_PLATFORM_TYPE
 from .logic.backup_jobs import build_backup_jobs_payload
 from .logic.guest_keys import make_guest_key, matches_selected_guest
+from .logic.node_metrics import merge_node_status_with_cluster_resource
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -244,6 +245,9 @@ async def create_proxmox_coordinator(hass, entry, client):
                     if isinstance(node_status, dict):
                         normalized = node_status.get("data", node_status)
 
+                    normalized = merge_node_status_with_cluster_resource(
+                        normalized, cluster_resources, node
+                    )
                     result["node"] = normalized or {"status": "unknown"}
 
                     # -------- Node updates --------
