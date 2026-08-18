@@ -14,6 +14,7 @@ from .zfs import ProxmoxZFSPoolSensor
 from .memory import ProxmoxDimmSensor
 from .sensor_last_action import PBSLastActionSensor
 from ..const import DOMAIN, CONF_NODE
+from ..logic.entity_registry import is_obsolete_sensor_entity
 from ..logic.entity_topology import entity_topology_keys
 from ..logic.guest_keys import matches_selected_guest
 
@@ -413,7 +414,7 @@ async def async_setup_entry(
                         continue
 
             # Respect user selection
-            if st_name not in selected_storage:
+            if selected_storage is not None and st_name not in selected_storage:
                 continue
 
             created_storages.add(st_name)
@@ -631,7 +632,9 @@ async def async_setup_entry(
     new_unique_ids = {getattr(entity, "_attr_unique_id", None) for entity in entities}
 
     for entity_entry in existing_entries:
-        if entity_entry.unique_id not in new_unique_ids:
+        # The registry query contains sensors, buttons and binary sensors for
+        # this config entry.  This platform must only prune its own entities.
+        if is_obsolete_sensor_entity(entity_entry, new_unique_ids):
             _LOGGER.info("Removing obsolete entity: %s", entity_entry.entity_id)
             ent_reg.async_remove(entity_entry.entity_id)
 
@@ -654,16 +657,17 @@ async def async_setup_entry(
     def _discover_new_entities():
         nonlocal reload_scheduled
         current_topology = entity_topology_keys(coordinator.data)
-        new_keys = current_topology - known_topology
-        if not new_keys or reload_scheduled:
+        changed_keys = current_topology.symmetric_difference(known_topology)
+        if not changed_keys or reload_scheduled:
             return
 
-        known_topology.update(new_keys)
+        known_topology.clear()
+        known_topology.update(current_topology)
         reload_scheduled = True
         _LOGGER.info(
-            "Reloading %s to add newly discovered entities: %s",
+            "Reloading %s after entity topology changed: %s",
             entry.title,
-            ", ".join(sorted(new_keys)),
+            ", ".join(sorted(changed_keys)),
         )
         hass.async_create_task(hass.config_entries.async_reload(entry.entry_id))
 

@@ -10,7 +10,7 @@ from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.const import Platform
 from homeassistant.helpers import entity_registry as er
 
-from .services import register_services
+from .services import register_services, unregister_services
 from .const import (
     DOMAIN,
     CONF_HOST,
@@ -206,7 +206,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         "features": data.get("features", {}),
     }
 
-    register_services(hass, entry)
+    if data.get(CONF_PLATFORM_TYPE) == "PVE":
+        register_services(hass)
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
@@ -295,7 +296,27 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     if unload_ok:
         hass.data[DOMAIN].pop(entry.entry_id, None)
+        if not any(
+            data.get("server_type") == "PVE" for data in hass.data[DOMAIN].values()
+        ):
+            unregister_services(hass)
         if not hass.data[DOMAIN]:
             hass.data.pop(DOMAIN)
 
     return unload_ok
+
+
+async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Remove automatically managed cluster entries with their PVE parent."""
+    if entry.data.get(CONF_PLATFORM_TYPE) != "PVE":
+        return
+
+    children = [
+        candidate
+        for candidate in hass.config_entries.async_entries(DOMAIN)
+        if candidate.data.get(CONF_PLATFORM_TYPE) == "CLUSTER"
+        and candidate.data.get("parent_entry_id") == entry.entry_id
+    ]
+    for child in children:
+        _LOGGER.info("Removing child CLUSTER entry %s", child.entry_id)
+        await hass.config_entries.async_remove(child.entry_id)

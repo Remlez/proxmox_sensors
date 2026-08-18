@@ -2,6 +2,13 @@ create_vzdump_backup:
   name: "Proxmox: Start Backup"
   description: "Performs a backup of selected VMs and/or CTs to the chosen storage."
   fields:
+    entry_id:
+      name: Config entry
+      description: "Required only when more than one PVE entry contains this node."
+      required: false
+      selector:
+        config_entry:
+          integration: proxmox_sensors
     node:
       name: Node
       description: "Node name (e.g., server)"
@@ -83,6 +90,13 @@ backup_all:
   name: "Proxmox: Massive Backup"
   description: "Performs backup of all VMs and/or CTs on the selected node."
   fields:
+    entry_id:
+      name: Config entry
+      description: "Required only when more than one PVE entry contains this node."
+      required: false
+      selector:
+        config_entry:
+          integration: proxmox_sensors
     node:
       name: Node
       description: "Node name (e.g., pve)"
@@ -165,6 +179,13 @@ confirm_shutdown_node:
   name: "Proxmox: Shutdown Node"
   description: "Requests confirmation and shuts down the selected node."
   fields:
+    entry_id:
+      name: Config entry
+      description: "Required only when more than one PVE entry contains this node."
+      required: false
+      selector:
+        config_entry:
+          integration: proxmox_sensors
     node:
       name: Node
       description: "Node name (e.g., pve)"
@@ -183,6 +204,13 @@ confirm_reboot_node:
   name: "Proxmox: Reboot Node"
   description: "Requests confirmation and reboots the selected node."
   fields:
+    entry_id:
+      name: Config entry
+      description: "Required only when more than one PVE entry contains this node."
+      required: false
+      selector:
+        config_entry:
+          integration: proxmox_sensors
     node:
       name: Node
       description: "Node name (e.g., pve)"
@@ -201,6 +229,13 @@ wake_node:
   name: "Proxmox: Wake Node"
   description: "Wake a Proxmox node using Wake-on-LAN"
   fields:
+    entry_id:
+      name: Config entry
+      description: "Required only when more than one PVE entry contains this node."
+      required: false
+      selector:
+        config_entry:
+          integration: proxmox_sensors
     node:
       name: Node
       required: true

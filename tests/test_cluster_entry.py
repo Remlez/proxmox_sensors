@@ -56,6 +56,7 @@ sys.modules[f"{PACKAGE}.const"] = constants
 
 services = types.ModuleType(f"{PACKAGE}.services")
 services.register_services = lambda *_args: None
+services.unregister_services = lambda *_args: None
 sys.modules[f"{PACKAGE}.services"] = services
 
 api_module = types.ModuleType(f"{PACKAGE}.api")
@@ -89,9 +90,14 @@ class FakeFlowManager:
 class FakeConfigEntries:
     def __init__(self):
         self.flow = FakeFlowManager()
+        self.entries = []
+        self.removed = []
 
     def async_entries(self, _domain):
-        return []
+        return self.entries
+
+    async def async_remove(self, entry_id):
+        self.removed.append(entry_id)
 
 
 class ClusterEntryTests(unittest.TestCase):
@@ -119,6 +125,33 @@ class ClusterEntryTests(unittest.TestCase):
         self.assertEqual({"source": "import"}, context)
         self.assertEqual("CLUSTER", data["platform_type"])
         self.assertEqual("parent-id", data["parent_entry_id"])
+
+    def test_removing_parent_removes_managed_cluster_child(self):
+        config_entries = FakeConfigEntries()
+        config_entries.entries = [
+            types.SimpleNamespace(
+                entry_id="child-id",
+                data={
+                    "platform_type": "CLUSTER",
+                    "parent_entry_id": "parent-id",
+                },
+            ),
+            types.SimpleNamespace(
+                entry_id="unrelated-child",
+                data={
+                    "platform_type": "CLUSTER",
+                    "parent_entry_id": "other-parent",
+                },
+            ),
+        ]
+        hass = types.SimpleNamespace(config_entries=config_entries)
+        parent = types.SimpleNamespace(
+            entry_id="parent-id", data={"platform_type": "PVE"}
+        )
+
+        asyncio.run(integration.async_remove_entry(hass, parent))
+
+        self.assertEqual(["child-id"], config_entries.removed)
 
 
 if __name__ == "__main__":

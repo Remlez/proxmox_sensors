@@ -4,17 +4,37 @@ import logging
 import asyncio
 from homeassistant.components import persistent_notification
 from homeassistant.core import HomeAssistant, ServiceCall
+from homeassistant.exceptions import HomeAssistantError
 
 from .const import DOMAIN
+from .logic.service_targets import resolve_pve_service_target
 
 _LOGGER = logging.getLogger(__name__)
 
 
-def register_services(hass: HomeAssistant, entry):
+SERVICE_NAMES = (
+    "create_vzdump_backup",
+    "backup_all",
+    "confirm_shutdown_node",
+    "confirm_reboot_node",
+    "wake_node",
+)
 
-    entry_data = hass.data[DOMAIN][entry.entry_id]
-    client = entry_data["client"]
-    coordinator = entry_data["coordinator"]
+
+def register_services(hass: HomeAssistant):
+    """Register integration-wide services once and dispatch calls at runtime."""
+    if hass.services.has_service(DOMAIN, SERVICE_NAMES[0]):
+        return
+
+    def service_target(call: ServiceCall, node: str | None):
+        try:
+            return resolve_pve_service_target(
+                hass.data.get(DOMAIN, {}),
+                node=node,
+                entry_id=call.data.get("entry_id"),
+            )
+        except ValueError as err:
+            raise HomeAssistantError(str(err)) from err
 
     # ====== SIMPLE / MULTI BACKUP SERVICE ==========
     async def handle_create_vzdump_backup(call: ServiceCall):
@@ -34,6 +54,9 @@ def register_services(hass: HomeAssistant, entry):
 
         if not storage:
             raise ValueError("Storage is required")
+
+        entry_data = service_target(call, node)
+        client = entry_data["client"]
 
         storage = str(storage).strip().replace("\n", "").replace("\r", "")
 
@@ -103,6 +126,9 @@ def register_services(hass: HomeAssistant, entry):
 
         if not storage:
             raise ValueError("Storage is required")
+
+        entry_data = service_target(call, node)
+        client = entry_data["client"]
 
         storage = str(storage).strip().replace("\n", "").replace("\r", "")
 
@@ -252,6 +278,9 @@ def register_services(hass: HomeAssistant, entry):
         node = call.data.get("node")
         confirm = call.data.get("confirm", False)
 
+        entry_data = service_target(call, node)
+        client = entry_data["client"]
+
         if not confirm:
             notification_id = f"proxmox_shutdown_confirm_{node}"
             message = (
@@ -283,6 +312,9 @@ def register_services(hass: HomeAssistant, entry):
         node = call.data.get("node")
         confirm = call.data.get("confirm", False)
 
+        entry_data = service_target(call, node)
+        client = entry_data["client"]
+
         if not confirm:
             notification_id = f"proxmox_reboot_confirm_{node}"
             message = (
@@ -309,6 +341,9 @@ def register_services(hass: HomeAssistant, entry):
     async def handle_wake_node(call: ServiceCall):
         node = call.data.get("node")
         mac = call.data.get("mac")
+
+        entry_data = service_target(call, node)
+        coordinator = entry_data["coordinator"]
 
         cluster_nodes = coordinator.data.get("cluster_nodes", [])
 
@@ -354,3 +389,10 @@ def register_services(hass: HomeAssistant, entry):
             _LOGGER.error(f"Error sending WOL to node {node}: {e}")
 
     hass.services.async_register(DOMAIN, "wake_node", handle_wake_node)
+
+
+def unregister_services(hass: HomeAssistant):
+    """Remove global services after the last PVE entry unloads."""
+    for service_name in SERVICE_NAMES:
+        if hass.services.has_service(DOMAIN, service_name):
+            hass.services.async_remove(DOMAIN, service_name)

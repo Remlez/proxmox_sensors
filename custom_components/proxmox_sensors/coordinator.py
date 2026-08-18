@@ -33,9 +33,11 @@ async def create_proxmox_coordinator(hass, entry, client):
     node = data.get(CONF_NODE, "Proxmox")
     server_type = data.get(CONF_PLATFORM_TYPE, "PVE")
 
-    selected_vms = data.get("selected_vms", [])
-    selected_cts = data.get("selected_cts", [])
-    selected_storage = data.get("selected_storage", [])
+    # Missing selection fields belong to legacy entries and mean "show all".
+    # An explicit empty list means that the user intentionally selected none.
+    selected_vms = data.get("selected_vms")
+    selected_cts = data.get("selected_cts")
+    selected_storage = data.get("selected_storage")
 
     enable_physical_disks = data.get("enable_physical_disks", True)
     enable_lm_sensors = data.get("enable_lm_sensors", True)
@@ -536,6 +538,9 @@ async def create_cluster_coordinator(hass, entry, client):
                     _normalize_api_dict(cluster_firewall)
                     if not isinstance(cluster_firewall, Exception)
                     else {}
+                )
+                result["cluster_tasks"] = (
+                    backup_tasks if isinstance(backup_tasks, list) else []
                 )
                 result["backup_jobs"] = build_backup_jobs_payload(
                     backup_jobs if not isinstance(backup_jobs, Exception) else [],

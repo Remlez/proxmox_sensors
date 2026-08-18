@@ -127,6 +127,7 @@ class ProxmoxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         schema_dict[vol.Optional("auto_detect_node", default=True)] = bool
         schema_dict[vol.Optional("enable_lm_sensors", default=True)] = bool
+        schema_dict[vol.Optional("enable_cluster", default=True)] = bool
         schema_dict[vol.Optional(CONF_VERIFY_SSL, default=False)] = bool
 
         if user_input is not None:
