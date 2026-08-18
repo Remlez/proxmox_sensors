@@ -3,6 +3,53 @@
 from __future__ import annotations
 
 
+def merge_node_status_with_cluster_resource(
+    node_status, cluster_resources, node_name
+):
+    """Fill basic node metrics from cluster/resources when status is unavailable.
+
+    ``/nodes/{node}/status`` exposes the richest node data but also requires
+    ``Sys.Audit``.  ``/cluster/resources`` already contains enough information
+    for the core CPU, memory and root-filesystem sensors, so keep those sensors
+    useful for read-only tokens with a narrower permission set.
+    """
+    merged = dict(node_status) if isinstance(node_status, dict) else {}
+    resource = next(
+        (
+            item
+            for item in cluster_resources or []
+            if isinstance(item, dict)
+            and item.get("type") == "node"
+            and item.get("node") == node_name
+        ),
+        None,
+    )
+
+    if resource is None:
+        return merged
+
+    for key in ("cpu", "uptime", "status"):
+        if merged.get(key) is None and resource.get(key) is not None:
+            merged[key] = resource[key]
+
+    for target, used_key, total_key in (
+        ("memory", "mem", "maxmem"),
+        ("rootfs", "disk", "maxdisk"),
+    ):
+        usage = merged.get(target)
+        usage = dict(usage) if isinstance(usage, dict) else {}
+
+        if usage.get("used") is None and resource.get(used_key) is not None:
+            usage["used"] = resource[used_key]
+        if usage.get("total") is None and resource.get(total_key) is not None:
+            usage["total"] = resource[total_key]
+
+        if usage:
+            merged[target] = usage
+
+    return merged
+
+
 def format_node_sensor_value(sensor_id, value):
     """Format a raw node sensor value without changing its exposed semantics."""
     if sensor_id == "pveversion" and isinstance(value, str):
