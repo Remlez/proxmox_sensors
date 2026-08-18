@@ -182,11 +182,17 @@
       "vm_memory_total": {
         "name": "RAM Total"
       },
+      "vm_memory_usage": {
+        "name": "RAM Usage"
+      },
       "vm_disk_used": {
         "name": "Disk Used"
       },
       "vm_disk_total": {
         "name": "Disk Total"
+      },
+      "vm_disk_usage": {
+        "name": "Disk Usage"
       },
       "vm_uptime": {
         "name": "Uptime"
@@ -203,11 +209,17 @@
       "ct_memory_total": {
         "name": "RAM Total"
       },
+      "ct_memory_usage": {
+        "name": "RAM Usage"
+      },
       "ct_disk_used": {
         "name": "Disk Used"
       },
       "ct_disk_total": {
         "name": "Disk Total"
+      },
+      "ct_disk_usage": {
+        "name": "Disk Usage"
       },
       "ct_network_rx": {
         "name": "Network RX"

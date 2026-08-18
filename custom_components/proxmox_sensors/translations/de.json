@@ -182,11 +182,17 @@
       "vm_memory_total": {
         "name": "RAM Gesamt"
       },
+      "vm_memory_usage": {
+        "name": "RAM-Auslastung"
+      },
       "vm_disk_used": {
         "name": "Genutzter Speicherplatz"
       },
       "vm_disk_total": {
         "name": "Speicherplatz Gesamt"
+      },
+      "vm_disk_usage": {
+        "name": "Speicherplatzauslastung"
       },
       "vm_uptime": {
         "name": "Betriebszeit"
@@ -203,11 +209,17 @@
       "ct_memory_total": {
         "name": "RAM Gesamt"
       },
+      "ct_memory_usage": {
+        "name": "RAM-Auslastung"
+      },
       "ct_disk_used": {
         "name": "Genutzter Speicherplatz"
       },
       "ct_disk_total": {
         "name": "Speicherplatz Gesamt"
+      },
+      "ct_disk_usage": {
+        "name": "Speicherplatzauslastung"
       },
       "ct_network_rx": {
         "name": "Netzwerk RX"

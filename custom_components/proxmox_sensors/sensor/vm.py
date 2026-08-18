@@ -5,6 +5,7 @@ from homeassistant.const import PERCENTAGE, UnitOfInformation, UnitOfTime
 
 from .base import ProxmoxBaseSensor
 from ..const import DOMAIN
+from ..logic.guest_metrics import calculate_usage_percentage
 from ..logic.guest_keys import make_guest_key
 
 
@@ -80,6 +81,9 @@ class ProxmoxVMAttributeSensor(ProxmoxBaseSensor):
         if attr_name == "cpu_usage":
             self._attr_native_unit_of_measurement = PERCENTAGE
             self._attr_state_class = SensorStateClass.MEASUREMENT
+        elif attr_name in {"memory_usage", "disk_usage"}:
+            self._attr_native_unit_of_measurement = PERCENTAGE
+            self._attr_state_class = SensorStateClass.MEASUREMENT
         elif attr_name in {
             "memory_used",
             "memory_total",
@@ -130,6 +134,16 @@ class ProxmoxVMAttributeSensor(ProxmoxBaseSensor):
             if self._attr_key == "cpu_usage":
                 val = vm_data.get("cpu")
                 return round(float(val) * 100, 2) if val is not None else None
+
+            if self._attr_key == "memory_usage":
+                return calculate_usage_percentage(
+                    vm_data.get("mem"), vm_data.get("maxmem")
+                )
+
+            if self._attr_key == "disk_usage":
+                return calculate_usage_percentage(
+                    vm_data.get("disk"), vm_data.get("maxdisk")
+                )
 
             # Network GB
             if self._attr_key == "network_rx":
