@@ -646,7 +646,6 @@ class PVEBackupProgressSensor(ProxmoxBaseSensor):
     """Sensor for backup progress in PVE using available tasks data."""
 
     def __init__(self, coordinator, node, entry_id):
-        name = "node_backup_progress"
         uid = f"proxmox_backup_progress_{node}"
 
         super().__init__(

@@ -5,7 +5,6 @@ import re
 from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
 
 from .base import ProxmoxBaseSensor
-from ..const import DOMAIN
 
 
 class ProxmoxHardwareSensor(ProxmoxBaseSensor):

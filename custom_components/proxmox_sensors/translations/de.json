@@ -20,9 +20,9 @@
         "title": "3. Zugangsdaten — Proxmox VE",
         "description": "Gib die Verbindungsdetails für dein PVE ein.",
         "data": {
-          "user": "Benutzer (z.B. root@pam)",
+          "user": "Benutzer (z. B. homeassistant@pve)",
           "password": "Passwort",
-          "token_id": "Token-ID (ohne Benutzer@pve!)",
+          "token_id": "Token-ID (nur Name, z. B. ha-token)",
           "token_secret": "Token-Geheimnis",
           "auto_detect_node": "Knoten automatisch von Host-IP erkennen",
           "enable_lm_sensors": "Hardware-Sensoren und Temperaturen aktivieren",
@@ -45,9 +45,9 @@
         "title": "3. Zugangsdaten — Proxmox Cluster",
         "description": "Gib die Zugangsdaten für die Verbindung zum Cluster ein. Verwendet dieselbe API wie PVE (Port 8006).",
         "data": {
-          "user": "Benutzer (z.B. root@pam)",
+          "user": "Benutzer (z. B. homeassistant@pve)",
           "password": "Passwort",
-          "token_id": "Token-ID (ohne Benutzer@pve!)",
+          "token_id": "Token-ID (nur Name, z. B. ha-token)",
           "token_secret": "Token-Geheimnis",
           "verify_ssl": "SSL-Zertifikat überprüfen"
         }

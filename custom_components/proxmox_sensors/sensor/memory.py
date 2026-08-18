@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from homeassistant.components.sensor import SensorEntity
-from ..const import DOMAIN
 from .base import ProxmoxBaseSensor
 
 

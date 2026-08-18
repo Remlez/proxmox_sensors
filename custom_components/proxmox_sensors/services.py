@@ -15,8 +15,6 @@ def register_services(hass: HomeAssistant, entry):
     entry_data = hass.data[DOMAIN][entry.entry_id]
     client = entry_data["client"]
     coordinator = entry_data["coordinator"]
-    node = entry.data.get("node", "Proxmox")
-    entry_id = entry.entry_id
 
     # ====== SIMPLE / MULTI BACKUP SERVICE ==========
     async def handle_create_vzdump_backup(call: ServiceCall):
@@ -26,7 +24,6 @@ def register_services(hass: HomeAssistant, entry):
         mode = call.data.get("mode", "snapshot")
         compress = call.data.get("compress", "zstd")
 
-        max_concurrent = call.data.get("max_concurrent", 1)
         delay_between = call.data.get("delay_between", 0)
 
         if not node:
@@ -61,7 +58,7 @@ def register_services(hass: HomeAssistant, entry):
             try:
                 _LOGGER.info(f"Starting backup of {vmid}...")
 
-                result = await client.start_vzdump(
+                await client.start_vzdump(
                     hass,
                     node=node,
                     vmid=vmid,
@@ -173,8 +170,6 @@ def register_services(hass: HomeAssistant, entry):
 
         # Process with concurrency limit using semaphore
         semaphore = asyncio.Semaphore(max_concurrent)
-        results = []
-
         async def backup_with_limit(vmid):
             async with semaphore:
                 try:
@@ -200,10 +195,7 @@ def register_services(hass: HomeAssistant, entry):
                     return (vmid, False, str(e))
 
         tasks = [backup_with_limit(vmid) for vmid in targets]
-        results = await asyncio.gather(
-            *(limited_task(task) for task in tasks),
-            return_exceptions=True,
-        )
+        results = await asyncio.gather(*tasks, return_exceptions=True)
 
         success_count = 0
         error_count = 0

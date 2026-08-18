@@ -1,5 +1,8 @@
 """Container (LXC) sensors for Proxmox Extended Sensors."""
 
+from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
+from homeassistant.const import PERCENTAGE, UnitOfInformation, UnitOfTime
+
 from .base import ProxmoxBaseSensor
 from ..const import DOMAIN
 from ..logic.guest_keys import make_guest_key
@@ -93,6 +96,27 @@ class ProxmoxContainerAttributeSensor(ProxmoxBaseSensor):
 
         self._attr_translation_key = f"ct_{attr_name}"
         self._attr_icon = icon
+
+        if attr_name == "cpu_usage":
+            self._attr_native_unit_of_measurement = PERCENTAGE
+            self._attr_state_class = SensorStateClass.MEASUREMENT
+        elif attr_name in {
+            "memory_used",
+            "memory_total",
+            "disk_used",
+            "disk_total",
+        }:
+            self._attr_native_unit_of_measurement = UnitOfInformation.GIBIBYTES
+            self._attr_device_class = SensorDeviceClass.DATA_SIZE
+            self._attr_state_class = SensorStateClass.MEASUREMENT
+        elif attr_name in {"network_rx", "network_tx"}:
+            self._attr_native_unit_of_measurement = UnitOfInformation.GIBIBYTES
+            self._attr_device_class = SensorDeviceClass.DATA_SIZE
+            self._attr_state_class = SensorStateClass.TOTAL_INCREASING
+        elif attr_name == "uptime":
+            self._attr_native_unit_of_measurement = UnitOfTime.HOURS
+            self._attr_device_class = SensorDeviceClass.DURATION
+            self._attr_state_class = SensorStateClass.MEASUREMENT
 
     @property
     def device_info(self):

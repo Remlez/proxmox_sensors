@@ -132,6 +132,15 @@ async def _async_manage_cluster_entry(
         "server_id": f"cluster_{cluster_name.lower()}",
     }
 
+    # Config entries must be created through the flow manager.  Building the
+    # dictionary alone leaves cluster monitoring disabled while still logging
+    # that an entry is being created.
+    await hass.config_entries.flow.async_init(
+        DOMAIN,
+        context={"source": "import"},
+        data=cluster_data,
+    )
+
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 

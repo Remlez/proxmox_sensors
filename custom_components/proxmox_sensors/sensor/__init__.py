@@ -13,7 +13,8 @@ from .hardware import ProxmoxHardwareNVMeSensor
 from .zfs import ProxmoxZFSPoolSensor
 from .memory import ProxmoxDimmSensor
 from .sensor_last_action import PBSLastActionSensor
-from ..const import DOMAIN, CONF_NODE, CONF_PLATFORM_TYPE
+from ..const import DOMAIN, CONF_NODE
+from ..logic.entity_topology import entity_topology_keys
 from ..logic.guest_keys import matches_selected_guest
 
 _LOGGER = logging.getLogger(__name__)
@@ -39,14 +40,6 @@ from .node import (
 
 from .cluster import (
     ProxmoxBackupJobsSensor,
-    ProxmoxClusterStatusSensor,
-    ProxmoxClusterNodesSensor,
-    ProxmoxClusterCPUSensor,
-    ProxmoxClusterRAMSensor,
-    ProxmoxClusterVMsSensor,
-    ProxmoxClusterCTsSensor,
-    ProxmoxClusterStorageSensor,
-    ProxmoxClusterHASensor,
 )
 
 # Hardware Sensors (lm-sensors)
@@ -121,10 +114,6 @@ async def async_setup_entry(
         "enable_lm_sensors", entry.data.get("enable_lm_sensors", True)
     )
 
-    enable_smart_monitoring = entry.options.get(
-        "enable_smart_monitoring", entry.data.get("enable_smart_monitoring", True)
-    )
-
     enable_node_controls = entry.options.get(
         "enable_node_controls", entry.data.get("enable_node_controls", False)
     )
@@ -139,10 +128,6 @@ async def async_setup_entry(
 
     enable_nodes_list = entry.options.get(
         "enable_nodes_list", entry.data.get("enable_nodes_list", True)
-    )
-
-    enable_cluster = entry.options.get(
-        "enable_cluster", entry.data.get("enable_cluster", True)
     )
 
     hass.data[DOMAIN][entry.entry_id]["enable_node_controls"] = enable_node_controls
@@ -407,8 +392,6 @@ async def async_setup_entry(
             is_shared = st.get("shared", 0) == 1
             storage_node = st.get("node")
             storage_path = st.get("path", "")
-            storage_type = st.get("type", "")
-
             # ---- SHARED (PBS, NFS, CIFS...) ----
             if is_shared:
                 pass
@@ -661,3 +644,27 @@ async def async_setup_entry(
 
     if entities:
         async_add_entities(entities)
+
+    # Home Assistant calls platform setup only once.  If Proxmox discovers a
+    # new VM, CT, storage, ZFS pool, disk, DIMM, or hardware sensor later, a
+    # controlled config-entry reload is needed to create the new entities.
+    known_topology = entity_topology_keys(c_data)
+    reload_scheduled = False
+
+    def _discover_new_entities():
+        nonlocal reload_scheduled
+        current_topology = entity_topology_keys(coordinator.data)
+        new_keys = current_topology - known_topology
+        if not new_keys or reload_scheduled:
+            return
+
+        known_topology.update(new_keys)
+        reload_scheduled = True
+        _LOGGER.info(
+            "Reloading %s to add newly discovered entities: %s",
+            entry.title,
+            ", ".join(sorted(new_keys)),
+        )
+        hass.async_create_task(hass.config_entries.async_reload(entry.entry_id))
+
+    entry.async_on_unload(coordinator.async_add_listener(_discover_new_entities))
