@@ -3,8 +3,6 @@
 from datetime import datetime
 
 from homeassistant.const import PERCENTAGE, UnitOfInformation
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
-from homeassistant.components.sensor import SensorEntity
 
 from ..const import DOMAIN
 from .base import ProxmoxPbsBaseSensor

@@ -20,9 +20,9 @@
         "title": "3. Access Credentials — Proxmox VE",
         "description": "Enter your PVE connection details.",
         "data": {
-          "user": "User (e.g., root@pam)",
+          "user": "User (e.g., homeassistant@pve)",
           "password": "Password",
-          "token_id": "Token ID (without user@pve!)",
+          "token_id": "Token ID (name only, e.g., ha-token)",
           "token_secret": "Token Secret",
           "auto_detect_node": "Auto-detect node from host IP",
           "enable_lm_sensors": "Enable hardware sensors & temperatures",
@@ -45,9 +45,9 @@
         "title": "3. Access Credentials — Proxmox Cluster",
         "description": "Enter credentials to connect to the cluster. Uses the same API as PVE (port 8006).",
         "data": {
-          "user": "User (e.g., root@pam)",
+          "user": "User (e.g., homeassistant@pve)",
           "password": "Password",
-          "token_id": "Token ID (without user@pve!)",
+          "token_id": "Token ID (name only, e.g., ha-token)",
           "token_secret": "Token Secret",
           "verify_ssl": "Verify SSL Certificate"
         }
@@ -182,11 +182,17 @@
       "vm_memory_total": {
         "name": "RAM Total"
       },
+      "vm_memory_usage": {
+        "name": "RAM Usage"
+      },
       "vm_disk_used": {
         "name": "Disk Used"
       },
       "vm_disk_total": {
         "name": "Disk Total"
+      },
+      "vm_disk_usage": {
+        "name": "Disk Usage"
       },
       "vm_uptime": {
         "name": "Uptime"
@@ -203,11 +209,17 @@
       "ct_memory_total": {
         "name": "RAM Total"
       },
+      "ct_memory_usage": {
+        "name": "RAM Usage"
+      },
       "ct_disk_used": {
         "name": "Disk Used"
       },
       "ct_disk_total": {
         "name": "Disk Total"
+      },
+      "ct_disk_usage": {
+        "name": "Disk Usage"
       },
       "ct_network_rx": {
         "name": "Network RX"

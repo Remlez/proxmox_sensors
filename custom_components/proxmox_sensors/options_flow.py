@@ -133,6 +133,7 @@ class ProxmoxOptionsFlow(config_entries.OptionsFlow):
                     "enable_node_controls": user_input.get(
                         "enable_node_controls", False
                     ),
+                    "enable_cluster": user_input.get("enable_cluster", True),
                     "selected_vms": user_input.get("vms", []),
                     "selected_cts": user_input.get("cts", []),
                     "selected_storage": user_input.get("storage", []),
@@ -265,6 +266,10 @@ class ProxmoxOptionsFlow(config_entries.OptionsFlow):
                             default=conf.get("enable_node_controls", False),
                         ): bool,
                         vol.Optional(
+                            "enable_cluster",
+                            default=conf.get("enable_cluster", True),
+                        ): bool,
+                        vol.Optional(
                             CONF_VERIFY_SSL,
                             default=conf.get(CONF_VERIFY_SSL, False),
                         ): bool,
@@ -294,6 +299,10 @@ class ProxmoxOptionsFlow(config_entries.OptionsFlow):
                         vol.Optional(
                             "enable_node_controls",
                             default=conf.get("enable_node_controls", False),
+                        ): bool,
+                        vol.Optional(
+                            "enable_cluster",
+                            default=conf.get("enable_cluster", True),
                         ): bool,
                         vol.Optional(
                             CONF_VERIFY_SSL,

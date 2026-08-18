@@ -1,5 +1,6 @@
 """API for Proxmox Extended Sensors."""
 
+from collections.abc import Callable
 from typing import Any, Optional
 import logging
 import requests
@@ -46,6 +47,20 @@ def _extract_status_code(err: Exception) -> int | None:
             return code
 
     return None
+
+
+def _is_expected_no_zfs_pools_error(err: Exception) -> bool:
+    """Return whether Proxmox is reporting that no ZFS pool exists."""
+    message = str(err).lower()
+    return (
+        "zpool list" in message
+        and ("exit code 1" in message or "no pools available" in message)
+    )
+
+
+def _is_expected_updates_permission_error(err: Exception) -> bool:
+    """Return whether the optional update check lacks Sys.Modify."""
+    return _extract_status_code(err) == 403 and "sys.modify" in str(err).lower()
 
 
 class ProxmoxClient:
@@ -112,7 +127,13 @@ class ProxmoxClient:
 
         return self._proxmox
 
-    async def get(self, hass, path: str, raise_errors: bool = False) -> Any:
+    async def get(
+        self,
+        hass,
+        path: str,
+        raise_errors: bool = False,
+        ignore_error: Callable[[Exception], bool] | None = None,
+    ) -> Any:
         if self._server_type == "PBS":
             return await hass.async_add_executor_job(
                 self._pbs_request, "GET", path, None, raise_errors
@@ -128,6 +149,10 @@ class ProxmoxClient:
             return await hass.async_add_executor_job(proxmox.get, path)
 
         except Exception as err:
+            if ignore_error and ignore_error(err):
+                LOGGER.debug("Ignoring expected PVE error on %s: %s", path, err)
+                return None
+
             if raise_errors:
                 status_code = _extract_status_code(err)
                 if status_code is not None:
@@ -201,7 +226,11 @@ class ProxmoxClient:
         return await self.get(hass, f"nodes/{node}/status")
 
     async def get_node_updates(self, hass, node: str):
-        return await self.get(hass, f"nodes/{node}/apt/update")
+        return await self.get(
+            hass,
+            f"nodes/{node}/apt/update",
+            ignore_error=_is_expected_updates_permission_error,
+        )
 
     async def get_node_network(self, hass, node: str):
         return await self.get(hass, f"nodes/{node}/network") or []
@@ -379,7 +408,14 @@ class ProxmoxClient:
             return {}
 
     async def get_zfs_pools(self, hass, node):
-        return await self.get(hass, f"nodes/{node}/disks/zfs") or []
+        return (
+            await self.get(
+                hass,
+                f"nodes/{node}/disks/zfs",
+                ignore_error=_is_expected_no_zfs_pools_error,
+            )
+            or []
+        )
 
     async def start_vzdump(
         self,

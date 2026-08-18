@@ -182,12 +182,14 @@
       "vm_memory_total": {
         "name": "Всього ОЗП"
       },
+      "vm_memory_usage": {"name": "Використання ОЗП"},
       "vm_disk_used": {
         "name": "Використано диска"
       },
       "vm_disk_total": {
         "name": "Всього диска"
       },
+      "vm_disk_usage": {"name": "Використання диска"},
       "vm_uptime": {
         "name": "Час роботи"
       },
@@ -203,12 +205,14 @@
       "ct_memory_total": {
         "name": "Всього ОЗП"
       },
+      "ct_memory_usage": {"name": "Використання ОЗП"},
       "ct_disk_used": {
         "name": "Використано диска"
       },
       "ct_disk_total": {
         "name": "Всього диска"
       },
+      "ct_disk_usage": {"name": "Використання диска"},
       "ct_network_rx": {
         "name": "Мережа RX"
       },

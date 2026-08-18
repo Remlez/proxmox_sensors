@@ -182,12 +182,14 @@
       "vm_memory_total": {
         "name": "RAM 总量"
       },
+      "vm_memory_usage": {"name": "内存使用率"},
       "vm_disk_used": {
         "name": "已用磁盘"
       },
       "vm_disk_total": {
         "name": "磁盘总量"
       },
+      "vm_disk_usage": {"name": "磁盘使用率"},
       "vm_uptime": {
         "name": "运行时间"
       },
@@ -203,12 +205,14 @@
       "ct_memory_total": {
         "name": "RAM 总量"
       },
+      "ct_memory_usage": {"name": "内存使用率"},
       "ct_disk_used": {
         "name": "已用磁盘"
       },
       "ct_disk_total": {
         "name": "磁盘总量"
       },
+      "ct_disk_usage": {"name": "磁盘使用率"},
       "ct_network_rx": {
         "name": "网络接收"
       },

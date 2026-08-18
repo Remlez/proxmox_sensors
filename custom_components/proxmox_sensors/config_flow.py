@@ -27,6 +27,7 @@ from .const import (
     CONF_PLATFORM_TYPE,
     CONF_VERIFY_SSL,
 )
+from .logic.validation import minimum_endpoint_has_resources
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -49,6 +50,23 @@ class ProxmoxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     def __init__(self):
         self._config = {}
         self._use_token = False
+
+    async def async_step_import(self, import_data) -> FlowResult:
+        """Create an internally managed cluster entry."""
+        if import_data.get(CONF_PLATFORM_TYPE) != "CLUSTER":
+            return self.async_abort(reason="invalid_import")
+
+        cluster_name = import_data.get("cluster_name")
+        if not cluster_name:
+            return self.async_abort(reason="missing_cluster_name")
+
+        await self.async_set_unique_id(f"cluster_{cluster_name.lower()}")
+        self._abort_if_unique_id_configured()
+
+        return self.async_create_entry(
+            title=f"CLUSTER: {cluster_name}",
+            data=import_data,
+        )
 
     # ===== STEP 1 — SERVER TYPE + HOST ======================
 
@@ -109,6 +127,7 @@ class ProxmoxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         schema_dict[vol.Optional("auto_detect_node", default=True)] = bool
         schema_dict[vol.Optional("enable_lm_sensors", default=True)] = bool
+        schema_dict[vol.Optional("enable_cluster", default=True)] = bool
         schema_dict[vol.Optional(CONF_VERIFY_SSL, default=False)] = bool
 
         if user_input is not None:
@@ -299,11 +318,9 @@ class ProxmoxConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             try:
                 response = await client.get(self.hass, endpoint, raise_errors=True)
 
-                if response is None or (
-                    endpoint == "nodes" and isinstance(response, list) and not response
-                ):
+                if not minimum_endpoint_has_resources(endpoint, response):
                     _LOGGER.debug(
-                        "Minimum validation endpoint returned no visible nodes: %s",
+                        "Minimum validation endpoint returned no visible resources: %s",
                         endpoint,
                     )
                     has_minimum = False

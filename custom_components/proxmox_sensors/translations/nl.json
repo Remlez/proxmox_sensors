@@ -182,12 +182,14 @@
       "vm_memory_total": {
         "name": "RAM Totaal"
       },
+      "vm_memory_usage": {"name": "RAM-gebruik"},
       "vm_disk_used": {
         "name": "Schijf Gebruikt"
       },
       "vm_disk_total": {
         "name": "Schijf Totaal"
       },
+      "vm_disk_usage": {"name": "Schijfgebruik"},
       "vm_uptime": {
         "name": "Draaitijd"
       },
@@ -203,12 +205,14 @@
       "ct_memory_total": {
         "name": "RAM Totaal"
       },
+      "ct_memory_usage": {"name": "RAM-gebruik"},
       "ct_disk_used": {
         "name": "Schijf Gebruikt"
       },
       "ct_disk_total": {
         "name": "Schijf Totaal"
       },
+      "ct_disk_usage": {"name": "Schijfgebruik"},
       "ct_network_rx": {
         "name": "Netwerk RX"
       },

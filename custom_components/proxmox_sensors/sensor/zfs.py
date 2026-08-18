@@ -1,7 +1,6 @@
 """ZFS sensors for Proxmox Extended Sensors."""
 
 from .base import ProxmoxBaseSensor
-from homeassistant.components.sensor import SensorStateClass
 
 
 class ProxmoxZFSPoolSensor(ProxmoxBaseSensor):

@@ -13,7 +13,9 @@ from .hardware import ProxmoxHardwareNVMeSensor
 from .zfs import ProxmoxZFSPoolSensor
 from .memory import ProxmoxDimmSensor
 from .sensor_last_action import PBSLastActionSensor
-from ..const import DOMAIN, CONF_NODE, CONF_PLATFORM_TYPE
+from ..const import DOMAIN, CONF_NODE
+from ..logic.entity_registry import is_obsolete_sensor_entity
+from ..logic.entity_topology import entity_topology_keys
 from ..logic.guest_keys import matches_selected_guest
 
 _LOGGER = logging.getLogger(__name__)
@@ -39,14 +41,6 @@ from .node import (
 
 from .cluster import (
     ProxmoxBackupJobsSensor,
-    ProxmoxClusterStatusSensor,
-    ProxmoxClusterNodesSensor,
-    ProxmoxClusterCPUSensor,
-    ProxmoxClusterRAMSensor,
-    ProxmoxClusterVMsSensor,
-    ProxmoxClusterCTsSensor,
-    ProxmoxClusterStorageSensor,
-    ProxmoxClusterHASensor,
 )
 
 # Hardware Sensors (lm-sensors)
@@ -121,10 +115,6 @@ async def async_setup_entry(
         "enable_lm_sensors", entry.data.get("enable_lm_sensors", True)
     )
 
-    enable_smart_monitoring = entry.options.get(
-        "enable_smart_monitoring", entry.data.get("enable_smart_monitoring", True)
-    )
-
     enable_node_controls = entry.options.get(
         "enable_node_controls", entry.data.get("enable_node_controls", False)
     )
@@ -139,10 +129,6 @@ async def async_setup_entry(
 
     enable_nodes_list = entry.options.get(
         "enable_nodes_list", entry.data.get("enable_nodes_list", True)
-    )
-
-    enable_cluster = entry.options.get(
-        "enable_cluster", entry.data.get("enable_cluster", True)
     )
 
     hass.data[DOMAIN][entry.entry_id]["enable_node_controls"] = enable_node_controls
@@ -407,8 +393,6 @@ async def async_setup_entry(
             is_shared = st.get("shared", 0) == 1
             storage_node = st.get("node")
             storage_path = st.get("path", "")
-            storage_type = st.get("type", "")
-
             # ---- SHARED (PBS, NFS, CIFS...) ----
             if is_shared:
                 pass
@@ -430,7 +414,7 @@ async def async_setup_entry(
                         continue
 
             # Respect user selection
-            if st_name not in selected_storage:
+            if selected_storage is not None and st_name not in selected_storage:
                 continue
 
             created_storages.add(st_name)
@@ -475,7 +459,10 @@ async def async_setup_entry(
                     ("cpu_usage", "%", "mdi:cpu-64-bit"),
                     ("memory_used", "GB", "mdi:memory"),
                     ("memory_total", "GB", "mdi:memory"),
+                    ("memory_usage", "%", "mdi:memory"),
+                    ("disk_used", "GB", "mdi:harddisk"),
                     ("disk_total", "GB", "mdi:harddisk-plus"),
+                    ("disk_usage", "%", "mdi:harddisk"),
                     ("uptime", "h", "mdi:timer-sand"),
                     ("network_rx", "GB", "mdi:download-network"),
                     ("network_tx", "GB", "mdi:upload-network"),
@@ -513,8 +500,10 @@ async def async_setup_entry(
                     ("cpu_usage", "%", "mdi:cpu-64-bit"),
                     ("memory_used", "GB", "mdi:memory"),
                     ("memory_total", "GB", "mdi:memory"),
+                    ("memory_usage", "%", "mdi:memory"),
                     ("disk_total", "GB", "mdi:harddisk-plus"),
                     ("disk_used", "GB", "mdi:harddisk"),
+                    ("disk_usage", "%", "mdi:harddisk"),
                     ("uptime", "h", "mdi:timer-outline"),
                     ("network_rx", "GB", "mdi:download-network"),
                     ("network_tx", "GB", "mdi:upload-network"),
@@ -648,7 +637,9 @@ async def async_setup_entry(
     new_unique_ids = {getattr(entity, "_attr_unique_id", None) for entity in entities}
 
     for entity_entry in existing_entries:
-        if entity_entry.unique_id not in new_unique_ids:
+        # The registry query contains sensors, buttons and binary sensors for
+        # this config entry.  This platform must only prune its own entities.
+        if is_obsolete_sensor_entity(entity_entry, new_unique_ids):
             _LOGGER.info("Removing obsolete entity: %s", entity_entry.entity_id)
             ent_reg.async_remove(entity_entry.entity_id)
 
@@ -661,3 +652,28 @@ async def async_setup_entry(
 
     if entities:
         async_add_entities(entities)
+
+    # Home Assistant calls platform setup only once.  If Proxmox discovers a
+    # new VM, CT, storage, ZFS pool, disk, DIMM, or hardware sensor later, a
+    # controlled config-entry reload is needed to create the new entities.
+    known_topology = entity_topology_keys(c_data)
+    reload_scheduled = False
+
+    def _discover_new_entities():
+        nonlocal reload_scheduled
+        current_topology = entity_topology_keys(coordinator.data)
+        changed_keys = current_topology.symmetric_difference(known_topology)
+        if not changed_keys or reload_scheduled:
+            return
+
+        known_topology.clear()
+        known_topology.update(current_topology)
+        reload_scheduled = True
+        _LOGGER.info(
+            "Reloading %s after entity topology changed: %s",
+            entry.title,
+            ", ".join(sorted(changed_keys)),
+        )
+        hass.async_create_task(hass.config_entries.async_reload(entry.entry_id))
+
+    entry.async_on_unload(coordinator.async_add_listener(_discover_new_entities))
